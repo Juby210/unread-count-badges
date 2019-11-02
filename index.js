@@ -21,9 +21,10 @@ module.exports = class UnreadCountBadges extends Plugin {
         inject('ucbadges', ChannelItem.prototype, 'renderIcons', function (_, res) {
             const uc = getUnreadCount(this.props.channel.id)
             if(uc > 0) {
-                let i = res.props.children.length - 1
-                if(res.props.children[i] &&
-                    res.props.children[i].props.className == 'ucbadge') {
+                let badge = res.props.children.find(c => c && c.props.className == 'ucbadge')
+                let i = res.props.children.indexOf(badge)
+
+                if(badge && i != -1) {
                         res.props.children[i] = React.createElement(
                             NumberBadge, { count: uc, className: 'ucbadge' }
                         )
