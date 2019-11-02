@@ -3,14 +3,18 @@ const { resolve } = require('path')
 const { getModule, getModuleByDisplayName, React } = require('powercord/webpack')
 const { inject, uninject } = require('powercord/injector')
 
+const Settings = require('./Settings')
+
 module.exports = class UnreadCountBadges extends Plugin {
     badges = []
     lastGuildId = ""
 
     async startPlugin() {
         this.loadCSS(resolve(__dirname, 'style.css'))
+        this.registerSettings('ucbadges', 'Unread Count Badges', Settings)
 
         const { getUnreadCount } = await getModule(['getUnreadCount'])
+        const icm = await getModule(['isChannelMuted'])
         const dispatcher = await getModule(['dispatch'])
 
         const ChannelItem = await getModuleByDisplayName('ChannelItem')
@@ -19,6 +23,9 @@ module.exports = class UnreadCountBadges extends Plugin {
         const _this = this
 
         inject('ucbadges', ChannelItem.prototype, 'renderIcons', function (_, res) {
+            if(_this.settings.get('ignoreMutedChannels') &&
+                icm.isChannelMuted(this.props.channel.guild_id, this.props.channel.id)) return res
+
             const uc = getUnreadCount(this.props.channel.id)
             if(uc > 0) {
                 let badge = res.props.children.find(c => c && c.props.className == 'ucbadge')
