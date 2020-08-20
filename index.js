@@ -10,8 +10,12 @@ module.exports = class UnreadCountBadges extends Plugin {
     lastGuildId = ""
 
     async startPlugin() {
-        this.loadCSS(resolve(__dirname, 'style.css'))
-        this.registerSettings('ucbadges', 'Unread Count Badges', Settings)
+        this.loadStylesheet(resolve(__dirname, 'style.css'))
+        powercord.api.settings.registerSettings('ucbadges', {
+			category: this.entityID,
+			label: 'Unread Count Badges',
+			render: Settings
+		})
 
         const { getUnreadCount } = await getModule(['getUnreadCount'])
         const icm = await getModule(['isChannelMuted'])
@@ -52,6 +56,7 @@ module.exports = class UnreadCountBadges extends Plugin {
     }
 
     async pluginWillUnload() {
+		powercord.api.settings.unregisterSettings('ucbadges')
         uninject('ucbadges')
         const dispatcher = await getModule(['dispatch'])
         dispatcher.unsubscribe('MESSAGE_CREATE', a => this.updateBadges(a))
