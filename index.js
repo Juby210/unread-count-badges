@@ -1,4 +1,5 @@
 const { Plugin } = require('powercord/entities')
+const { findInReactTree } = require('powercord/util')
 const { getModule, getModuleByDisplayName, FluxDispatcher, React } = require('powercord/webpack')
 const { inject, uninject } = require('powercord/injector')
 
@@ -24,11 +25,13 @@ module.exports = class UnreadCountBadges extends Plugin {
         const _this = this
 
         inject('ucbadges', ChannelItem.prototype, 'renderIcons', function (_, res) {
-            if(!res?.props?.children?.props?.children || (_this.settings.get('ignoreMutedChannels') &&
+            if (!res || (_this.settings.get('ignoreMutedChannels') &&
                 icm.isChannelMuted(this.props.channel.guild_id, this.props.channel.id))) return res
 
-            const uc = getUnreadCount(this.props.channel.id), { children } = res.props.children.props
+            const uc = getUnreadCount(this.props.channel.id)
             if (uc) {
+                const children = findInReactTree(res, c => Array.isArray(c))
+                if (!children) return res
                 const badge = children.find(c => c && c.props.className == 'ucbadge')
 
                 if (!badge) children.push(React.createElement(
