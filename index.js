@@ -1,6 +1,5 @@
 const { Plugin } = require('powercord/entities')
-const { findInReactTree } = require('powercord/util')
-const { getModule, getModuleByDisplayName, FluxDispatcher, React } = require('powercord/webpack')
+const { getModule, FluxDispatcher, React } = require('powercord/webpack')
 const { inject, uninject } = require('powercord/injector')
 
 const Settings = require('./components/Settings')
@@ -19,28 +18,18 @@ module.exports = class UnreadCountBadges extends Plugin {
         })
 
         const { getUnreadCount } = await getModule(['getUnreadCount'])
-        const icm = await getModule(['isChannelMuted'])
-        const ChannelItem = await getModuleByDisplayName('ChannelItem')
+        const ChannelItem = await getModule(m => m.default && m.default.displayName == 'ChannelItem')
+        inject('ucbadges', ChannelItem, 'default', args => {
+            if (this.settings.get('ignoreMutedChannels') && args[0].muted) return args
 
-        const _this = this
+            const uc = getUnreadCount(args[0].channel.id)
+            if (uc && !args[0].children.find(c => c?.props?.className == 'ucbadge')) args[0].children.push(React.createElement(
+                UpdateableBadge, { className: 'ucbadge', channelId: args[0].channel.id, getUnreadCount, _this: this }
+            ))
 
-        inject('ucbadges', ChannelItem.prototype, 'renderIcons', function (_, res) {
-            if (!res || (_this.settings.get('ignoreMutedChannels') &&
-                icm.isChannelMuted(this.props.channel.guild_id, this.props.channel.id))) return res
-
-            const uc = getUnreadCount(this.props.channel.id)
-            if (uc) {
-                const children = findInReactTree(res, c => Array.isArray(c))
-                if (!children) return res
-                const badge = children.find(c => c && c.props.className == 'ucbadge')
-
-                if (!badge) children.push(React.createElement(
-                    UpdateableBadge, { className: 'ucbadge', channelId: this.props.channel.id, getUnreadCount, _this }
-                ))
-            }
-
-            return res
-        })
+            return args
+        }, true)
+        ChannelItem.default.displayName = 'ChannelItem'
 
         FluxDispatcher.subscribe('MESSAGE_CREATE', this.updateBadges = data => {
             if (data.message.guild_id == this.lastGuildId)
