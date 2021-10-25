@@ -20,7 +20,7 @@ module.exports = class UnreadCountBadges extends Plugin {
         const UnreadBadge = ({ channelId }) => {
             const unreadCount = FluxUtils.useStateFromStores([ UnreadsStore ], () => UnreadsStore.getUnreadCount(channelId))
             if (!unreadCount) return null
-            return React.createElement(NumberBadge, { count: unreadCount, color: 'var(--background-accent)', className: 'ucbadge' })
+            return React.createElement(NumberBadge, { count: unreadCount, color: 'var(--brand-experiment)', className: 'ucbadge' })
         }
 
         const ChannelItem = await getModule(m => m.default && m.default.displayName === 'ChannelItem')
